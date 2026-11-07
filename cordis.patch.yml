@@ -1,0 +1,22 @@
+# dsh-web-pin-auth bundle patch: one insert over the profile tree.
+#
+# The plugin row activates only when this package is installed as a profile
+# dependency (for example `dsh plugin --profile web add link:/path/to/dsh-web-pin-auth`),
+# which also appends `dsh-web-pin-auth` to package.json's `dsh.profile.bundles`.
+#
+# IMPORTANT: this is an `insert`. Do not ALSO declare a top-level `- id: web-pin-auth`
+# row in your profile's own cordis.patch.yml, or the auth seam would be patched
+# twice (harmless in practice, but noisy).
+- insert:
+    - id: web-pin-auth
+      name: 'dsh-web-pin-auth'
+      config:
+        # Off unless a deployment opts in explicitly; set enabled: true in the
+        # profile patch to activate the plugin.
+        enabled: false
+        # Keep independent /connect API operators on their own Peer.
+        keepApiOperators: true
+        # Set a non-empty string to require that constant instead of the
+        # per-process launch token (`?token=<value>`); leave unset for open
+        # access. Example: token: 'REPLACE_WITH_A_LONG_RANDOM_SECRET'
+        # token: ''

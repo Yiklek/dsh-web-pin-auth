@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The ONE place the upstream DSH version appears. The compat guard asserts
+# this exact build still exposes the Connection seam the plugin patches, so a
+# floating tag (`@latest`, `@alpha`) would turn upstream drift into an
+# unexplained red build. Bump it here and everything moves together.
+env:
+  DSH_VERSION: 0.2.2-rc.1
+  NODE_VERSION: "22"
+
+jobs:
+  test:
+    name: Unit tests & package check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # No dependencies: the plugin and its tests use only node: builtins.
+      - name: Syntax check
+        run: node --check lib/index.js
+
+      - name: Unit tests
+        run: node --test
+
+      # dsh-web-pin-auth has no public DSH seam: it replaces three methods on
+      # Connection's BrowserAuth instance. If an upgrade renames them the
+      # plugin fails safe (auth stays required) but silently stops working.
+      # This guard turns that silent drift into a red build.
+      - name: Install DSH for the upstream contract check
+        run: |
+          mkdir -p "$RUNNER_TEMP/dsh-compat"
+          npm install --no-save --prefix "$RUNNER_TEMP/dsh-compat" "@deepseek-ai/dsh@$DSH_VERSION"
+
+      - name: Upstream contract check
+        run: node scripts/compat-check.mjs
+        env:
+          DSH_INSTALL_DIR: ${{ runner.temp }}/dsh-compat/node_modules/@deepseek-ai/dsh
+
+      - name: Package contents
+        run: npm pack --dry-run
+
+      # Install the packed tarball in a scratch project and import it the way a
+      # profile would, so a broken `files`/`exports`/`main` combination fails
+      # here instead of on a user's machine.
+      - name: Install the tarball and load it
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TEMP/install"
+          cd "$RUNNER_TEMP/install"
+          npm init -y > /dev/null
+          npm install --no-save "$RUNNER_TEMP"/dsh-web-pin-auth-*.tgz
+          cat > check.mjs <<'EOF'
+          const mod = await import('dsh-web-pin-auth')
+          if (mod.name !== 'web-pin-auth') throw new Error(`unexpected plugin name: ${mod.name}`)
+          if (typeof mod.apply !== 'function') throw new Error('apply() missing')
+          if (!Array.isArray(mod.inject) || !mod.inject.includes('connection')) {
+            throw new Error(`unexpected inject: ${JSON.stringify(mod.inject)}`)
+          }
+          console.log('tarball import OK:', mod.name)
+          EOF
+          node check.mjs

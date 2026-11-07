@@ -1,0 +1,13 @@
+# dsh-web-pin-auth overlay patch — use with `dsh web --patch <this file>` when the
+# package is not installed into the profile (no pnpm step, no package.json edit).
+#
+# The name below is a file URL because an overlay patch has no package scope of
+# its own: replace /ABSOLUTE/PATH/TO with the real checkout location. A relative
+# specifier ('.') is not reliable here because it resolves against the profile,
+# not this file.
+- insert:
+    - id: web-pin-auth
+      name: 'file:///ABSOLUTE/PATH/TO/dsh-web-pin-auth/lib/index.js'
+      config:
+        enabled: true
+        keepApiOperators: true

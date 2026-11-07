@@ -1,0 +1,49 @@
+{
+  "name": "dsh-web-pin-auth",
+  "version": "0.1.0",
+  "description": "Replace the DSH Web launch token: fixed token via query or header (Authorization: Bearer / X-DSH-Token), or disable browser auth entirely; the Host/Origin fence stays.",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/",
+    "cordis.patch.yml",
+    "overlay.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "auth",
+    "token",
+    "web"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "category": "extension",
+    "displayName": "免 Token 访问 Web UI",
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test",
+    "compat": "node scripts/compat-check.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yiklek/dsh-web-pin-auth.git"
+  },
+  "homepage": "https://github.com/Yiklek/dsh-web-pin-auth#readme",
+  "bugs": {
+    "url": "https://github.com/Yiklek/dsh-web-pin-auth/issues"
+  }
+}
